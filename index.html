@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance System - Студенттерді тіркеу</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .tab-active { border-bottom: 2px solid #2563eb; color: #2563eb; }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="max-w-6xl mx-auto p-4 md:p-8">
+        <!-- Header -->
+        <header class="mb-8 text-center">
+            <h1 class="text-3xl font-bold text-gray-800">Студенттердің сабаққа қатысуын тіркеу жүйесі</h1>
+            <p class="text-gray-600 mt-2">Қатысу деректерін сақтау, есептеу және есеп беру</p>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <div class="flex space-x-4 border-bottom border-gray-200 mb-6 bg-white p-2 rounded-lg shadow-sm">
+            <button onclick="switchTab('dashboard')" id="btn-dashboard" class="px-4 py-2 font-medium tab-active">Басқару панелі</button>
+            <button onclick="switchTab('attendance')" id="btn-attendance" class="px-4 py-2 font-medium text-gray-500 hover:text-blue-600">Қатысуды белгілеу</button>
+            <button onclick="switchTab('reports')" id="btn-reports" class="px-4 py-2 font-medium text-gray-500 hover:text-blue-600">Есептер</button>
+        </div>
+
+        <!-- Tab Content: Dashboard -->
+        <div id="tab-dashboard" class="space-y-6">
+            <div class="grid md:grid-cols-2 gap-6">
+                <!-- Add Student -->
+                <div class="bg-white p-6 rounded-xl shadow-md border border-gray-100">
+                    <h2 class="text-xl font-semibold mb-4 text-blue-700">Студент қосу</h2>
+                    <div class="flex space-x-2">
+                        <input type="text" id="studentName" placeholder="Студенттің аты-жөні" class="flex-1 border p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400">
+                        <button onclick="addStudent()" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">Қосу</button>
+                    </div>
+                    <ul id="studentList" class="mt-4 space-y-2 max-h-48 overflow-y-auto"></ul>
+                </div>
+
+                <!-- Add Subject -->
+                <div class="bg-white p-6 rounded-xl shadow-md border border-gray-100">
+                    <h2 class="text-xl font-semibold mb-4 text-green-700">Пән қосу</h2>
+                    <div class="flex space-x-2">
+                        <input type="text" id="subjectName" placeholder="Пән атауы" class="flex-1 border p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400">
+                        <button onclick="addSubject()" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">Қосу</button>
+                    </div>
+                    <ul id="subjectList" class="mt-4 space-y-2 max-h-48 overflow-y-auto"></ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab Content: Attendance Tracking -->
+        <div id="tab-attendance" class="hidden bg-white p-6 rounded-xl shadow-md border border-gray-100">
+            <div class="flex flex-wrap items-end gap-4 mb-6">
+                <div class="flex-1 min-w-[200px]">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Пәнді таңдаңыз</label>
+                    <select id="attendanceSubject" class="w-full border p-2 rounded-lg bg-gray-50"></select>
+                </div>
+                <div class="flex-1 min-w-[200px]">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Күнді таңдаңыз</label>
+                    <input type="date" id="attendanceDate" class="w-full border p-2 rounded-lg bg-gray-50">
+                </div>
+                <button onclick="renderAttendanceList()" class="bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition">Көрсету</button>
+            </div>
+
+            <div id="attendanceActionArea" class="hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-gray-100">
+                                <th class="p-3 border">Студент аты-жөні</th>
+                                <th class="p-3 border text-center">Қатысуы (Белгілеу)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="attendanceTableBody"></tbody>
+                    </table>
+                </div>
+                <div class="mt-6">
+                    <button onclick="saveAttendance()" class="bg-green-600 text-white px-8 py-2 rounded-lg hover:bg-green-700 shadow-lg transition">Сақтау</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab Content: Reports -->
+        <div id="tab-reports" class="hidden bg-white p-6 rounded-xl shadow-md border border-gray-100">
+            <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-semibold text-gray-800">Қатысу статистикасы</h2>
+                <button onclick="exportToCSV()" class="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center hover:bg-blue-700 transition">
+                    CSV форматында жүктеу
+                </button>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-gray-100">
+                            <th class="p-3 border">Студент</th>
+                            <th class="p-3 border">Пән</th>
+                            <th class="p-3 border text-center">Барлық сабақ</th>
+                            <th class="p-3 border text-center">Қатысқаны</th>
+                            <th class="p-3 border text-center">Пайыз (%)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reportTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Message -->
+    <div id="toast" class="fixed bottom-5 right-5 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-2xl transform translate-y-20 transition-transform duration-300 pointer-events-none"></div>
+
+    <script>
+        // State Management
+        let state = {
+            students: JSON.parse(localStorage.getItem('as_students')) || [],
+            subjects: JSON.parse(localStorage.getItem('as_subjects')) || [],
+            records: JSON.parse(localStorage.getItem('as_records')) || [] // {studentId, subjectId, date, status}
+        };
+
+        function saveData() {
+            localStorage.setItem('as_students', JSON.stringify(state.students));
+            localStorage.setItem('as_subjects', JSON.stringify(state.subjects));
+            localStorage.setItem('as_records', JSON.stringify(state.records));
+            updateUI();
+        }
+
+        // Dashboard Actions
+        function addStudent() {
+            const input = document.getElementById('studentName');
+            const name = input.value.trim();
+            if (!name) return showToast('Атын жазыңыз');
+            state.students.push({ id: Date.now(), name });
+            input.value = '';
+            saveData();
+            showToast('Студент қосылды');
+        }
+
+        function addSubject() {
+            const input = document.getElementById('subjectName');
+            const name = input.value.trim();
+            if (!name) return showToast('Пән атауын жазыңыз');
+            state.subjects.push({ id: Date.now(), name });
+            input.value = '';
+            saveData();
+            showToast('Пән қосылды');
+        }
+
+        function removeStudent(id) {
+            state.students = state.students.filter(s => s.id !== id);
+            state.records = state.records.filter(r => r.studentId !== id);
+            saveData();
+        }
+
+        function removeSubject(id) {
+            state.subjects = state.subjects.filter(s => s.id !== id);
+            state.records = state.records.filter(r => r.subjectId !== id);
+            saveData();
+        }
+
+        // Attendance Actions
+        function renderAttendanceList() {
+            const subjectId = parseInt(document.getElementById('attendanceSubject').value);
+            const date = document.getElementById('attendanceDate').value;
+
+            if (!subjectId || !date) return showToast('Пән мен күнді таңдаңыз');
+            if (state.students.length === 0) return showToast('Студенттер тізімі бос');
+
+            const tbody = document.getElementById('attendanceTableBody');
+            tbody.innerHTML = '';
+
+            state.students.forEach(student => {
+                const existing = state.records.find(r => r.studentId === student.id && r.subjectId === subjectId && r.date === date);
+                const isPresent = existing ? existing.status : true;
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="p-3 border font-medium">${student.name}</td>
+                    <td class="p-3 border text-center">
+                        <label class="inline-flex items-center cursor-pointer">
+                            <input type="checkbox" class="student-checkbox w-6 h-6 rounded text-blue-600 focus:ring-blue-500" 
+                                data-student-id="${student.id}" ${isPresent ? 'checked' : ''}>
+                            <span class="ml-2 text-sm text-gray-600">${isPresent ? 'Қатысты' : 'Келмеді'}</span>
+                        </label>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('attendanceActionArea').classList.remove('hidden');
+        }
+
+        function saveAttendance() {
+            const subjectId = parseInt(document.getElementById('attendanceSubject').value);
+            const date = document.getElementById('attendanceDate').value;
+            const checkboxes = document.querySelectorAll('.student-checkbox');
+
+            checkboxes.forEach(cb => {
+                const studentId = parseInt(cb.dataset.studentId);
+                const status = cb.checked;
+
+                // Remove existing
+                state.records = state.records.filter(r => !(r.studentId === studentId && r.subjectId === subjectId && r.date === date));
+                // Add new
+                state.records.push({ studentId, subjectId, date, status });
+            });
+
+            saveData();
+            showToast('Қатысу деректері сақталды');
+        }
+
+        // Report Logic
+        function updateReports() {
+            const tbody = document.getElementById('reportTableBody');
+            tbody.innerHTML = '';
+
+            state.students.forEach(student => {
+                state.subjects.forEach(subject => {
+                    const studentRecords = state.records.filter(r => r.studentId === student.id && r.subjectId === subject.id);
+                    const totalSessions = studentRecords.length;
+                    const attendedCount = studentRecords.filter(r => r.status).length;
+                    const percentage = totalSessions > 0 ? ((attendedCount / totalSessions) * 100).toFixed(1) : 0;
+
+                    if (totalSessions > 0) {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td class="p-3 border">${student.name}</td>
+                            <td class="p-3 border">${subject.name}</td>
+                            <td class="p-3 border text-center font-semibold text-gray-500">${totalSessions}</td>
+                            <td class="p-3 border text-center font-semibold text-blue-600">${attendedCount}</td>
+                            <td class="p-3 border text-center">
+                                <span class="px-3 py-1 rounded-full text-white text-xs ${percentage >= 70 ? 'bg-green-500' : 'bg-red-500'}">
+                                    ${percentage}%
+                                </span>
+                            </td>
+                        `;
+                        tbody.appendChild(tr);
+                    }
+                });
+            });
+        }
+
+        // Export Function
+        function exportToCSV() {
+            if (state.records.length === 0) return showToast('Деректер жоқ');
+            
+            let csv = 'Студент,Пән,Күні,Мәртебесі\n';
+            state.records.forEach(r => {
+                const sName = state.students.find(s => s.id === r.studentId)?.name || 'Белгісіз';
+                const subName = state.subjects.find(sub => sub.id === r.subjectId)?.name || 'Белгісіз';
+                csv += `"${sName}","${subName}","${r.date}","${r.status ? 'Қатысты' : 'Келмеді'}"\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", `attendance_report_${new Date().toLocaleDateString()}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // UI Helpers
+        function switchTab(tab) {
+            ['dashboard', 'attendance', 'reports'].forEach(t => {
+                document.getElementById(`tab-${t}`).classList.add('hidden');
+                document.getElementById(`btn-${t}`).classList.remove('tab-active');
+                document.getElementById(`btn-${t}`).classList.add('text-gray-500');
+            });
+            document.getElementById(`tab-${tab}`).classList.remove('hidden');
+            document.getElementById(`btn-${tab}`).classList.add('tab-active');
+            
+            if (tab === 'reports') updateReports();
+        }
+
+        function updateUI() {
+            const sList = document.getElementById('studentList');
+            sList.innerHTML = '';
+            state.students.forEach(s => {
+                const li = document.createElement('li');
+                li.className = "flex justify-between items-center bg-gray-50 p-2 rounded";
+                li.innerHTML = `<span>${s.name}</span> <button onclick="removeStudent(${s.id})" class="text-red-500 hover:underline text-sm">Жою</button>`;
+                sList.appendChild(li);
+            });
+
+            const subList = document.getElementById('subjectList');
+            subList.innerHTML = '';
+            state.subjects.forEach(s => {
+                const li = document.createElement('li');
+                li.className = "flex justify-between items-center bg-gray-50 p-2 rounded";
+                li.innerHTML = `<span>${s.name}</span> <button onclick="removeSubject(${s.id})" class="text-red-500 hover:underline text-sm">Жою</button>`;
+                subList.appendChild(li);
+            });
+
+            const subSelect = document.getElementById('attendanceSubject');
+            subSelect.innerHTML = '<option value="">Таңдаңыз...</option>';
+            state.subjects.forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s.id;
+                opt.textContent = s.name;
+                subSelect.appendChild(opt);
+            });
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.classList.remove('translate-y-20');
+            setTimeout(() => toast.classList.add('translate-y-20'), 3000);
+        }
+
+        // Initial Run
+        document.getElementById('attendanceDate').valueAsDate = new Date();
+        updateUI();
+    </script>
+</body>
+</html>
